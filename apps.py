@@ -5,5 +5,4 @@ class GoldBiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
 
     def ready(self):
-        from .tasks_scheduler import schedule_tasks
-        schedule_tasks()
+        import gold_bi.signals  # Importa i segnali per assicurarne il collegamento
