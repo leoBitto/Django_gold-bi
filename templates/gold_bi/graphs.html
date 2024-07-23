@@ -1,37 +1,13 @@
 <!-- logging_app/templates/logging_app/graphs.html -->
 
-{% extends "website/dashboard/dashboard.html" %}
+{% extends "backoffice/backoffice_base.html" %}
 {% load static %}
 
 {% block dashboard_app %}
 <!-- Aggiungi il tuo codice HTML personalizzato qui -->
 <div class="container-fluid">
     <div class="row">
-        <!-- Colonna per i grafici -->
-        
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-chart-line mr-1"></i>Cumulative Error Trend
-                </div>
-                <div class="card-body">
-                    <!-- Inserisci qui l'HTML per il grafico a linee degli errori -->
-                    {{ errors_cum_chart_html | safe }}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-chart-line mr-1"></i>Cumulative Access Trend
-                </div>
-                <div class="card-body">
-                    <!-- Inserisci qui l'HTML per il grafico a linee degli accessi -->
-                    {{ access_cum_chart_html | safe }}
-                </div>
-            </div>
-        </div>      
-        
+        <!-- Grafico a Barre: Distribuzione per Ore degli Errori -->
         <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-header">
@@ -39,11 +15,12 @@
                 </div>
                 <div class="card-body">
                     <!-- Inserisci qui l'HTML per il grafico a barre degli errori per ora del giorno -->
-                    {{ errors_by_hour_chart | safe }}
+                    {{ error_hourly_chart | safe }}
                 </div>
             </div>
         </div>
-        
+
+        <!-- Grafico a Barre: Distribuzione per Ore degli Accessi -->
         <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-header">
@@ -51,12 +28,12 @@
                 </div>
                 <div class="card-body">
                     <!-- Inserisci qui l'HTML per il grafico a barre degli accessi per ora del giorno -->
-                    {{ access_by_hour_chart | safe }}
+                    {{ access_hourly_chart | safe }}
                 </div>
             </div>
         </div>
 
-        
+        <!-- Grafico a Barre: Distribuzione per Giorno della Settimana degli Errori -->
         <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-header">
@@ -64,11 +41,12 @@
                 </div>
                 <div class="card-body">
                     <!-- Inserisci qui l'HTML per il grafico a barre degli errori per giorno della settimana -->
-                    {{ errors_by_weekday_chart | safe }}
+                    {{ error_daily_chart | safe }}
                 </div>
             </div>
         </div>
 
+        <!-- Grafico a Barre: Distribuzione per Giorno della Settimana degli Accessi -->
         <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-header">
@@ -76,22 +54,26 @@
                 </div>
                 <div class="card-body">
                     <!-- Inserisci qui l'HTML per il grafico a barre degli accessi per giorno della settimana -->
-                    {{ access_by_weekday_chart | safe }}
+                    {{ access_daily_chart | safe }}
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-6">
+
+        <!-- Grafico a Torta: Distribuzione dei Codici di Risposta -->
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-header">
                     <i class="fas fa-chart-pie mr-1"></i> Response Code Distribution
                 </div>
                 <div class="card-body">
                     <!-- Inserisci qui l'HTML per il grafico a torta dei codici di risposta -->
-                    {{ response_code_chart_html | safe }}
+                    {{ response_code_pie_chart | safe }}
                 </div>
             </div>
         </div>
+
+
+
     </div>
 </div>
 {% endblock %}
