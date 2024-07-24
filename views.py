@@ -3,7 +3,7 @@ from django.views.generic import View
 import plotly.graph_objs as go
 from django.db.models import Count
 from logging_app.models import AccessLog, ErrorLog
-from .models import AggregatedAccessLog, AggregatedErrorLog, AggregatedResponseLog
+from .models import AggregatedAccessLog, AggregatedErrorLog
 from django.db.models import Count
 import pandas as pd
 import numpy as np
@@ -25,16 +25,12 @@ class GraphsView(View):
         access_hourly_chart = self.create_hourly_distribution_chart(access_by_hour, 'Accesses by Hour')
         access_daily_chart = self.create_weekly_distribution_chart(access_by_day, 'Accesses by Day of Week')
 
-        response_codes = AggregatedResponseLog.objects.using('gold').values('response_code').annotate(count=Count('id'))
-        response_code_pie_chart = self.create_response_code_pie_chart(response_codes)
-
         # Passa i dati al template della dashboard
         return render(request, 'gold_bi/graphs.html', {
             'error_hourly_chart': error_hourly_chart,
             'error_daily_chart': error_daily_chart,
             'access_hourly_chart': access_hourly_chart,
             'access_daily_chart': access_daily_chart,
-            'response_code_pie_chart': response_code_pie_chart,
         })
 
 

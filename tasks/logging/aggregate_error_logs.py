@@ -1,7 +1,8 @@
-from django.utils import timezone, dateparse
-from logging_app.models import ErrorLog
+from django.utils import timezone
+from logging_app.models import ErrorLog  # Assumendo che questo modello esista e sia simile ad AccessLog
 from gold_bi.models import AggregatedErrorLog
-from django.db import transaction
+from django.db.models import Count, F
+from django.db.models.functions import ExtractHour, ExtractWeekDay
 
 def aggregate_error_logs():
     """
@@ -11,19 +12,21 @@ def aggregate_error_logs():
     start_time = now - timezone.timedelta(days=1)
     end_time = start_time + timezone.timedelta(days=1)
     
-    logs = ErrorLog.objects.filter(timestamp__gte=start_time, timestamp__lt=end_time)
+    error_aggregations = ErrorLog.objects.using('default').filter(
+        timestamp__gte=start_time, timestamp__lt=end_time
+    ).annotate(
+        hour=ExtractHour('timestamp'),
+        day=ExtractWeekDay('timestamp')
+    ).values('hour', 'day').annotate(
+        count=Count('id')
+    ).values('hour', 'day', 'count')
+
     
-    # Aggregazione per ora e giorno della settimana
-    aggregation = logs.annotate(
-        hour=models.functions.ExtractHour('timestamp'),
-        day=models.functions.ExtractWeekDay('timestamp')
-    ).values('hour', 'day').annotate(count=models.Count('id'))
-    
-    with transaction.atomic(using='gold'):
-        for entry in aggregation:
-            AggregatedErrorLog.objects.update_or_create(
-                timestamp_aggregation=start_time,
-                hour=entry['hour'],
-                day=entry['day'],
-                defaults={'count': entry['count']}
-            ).using('gold')
+   # Inserimento dei risultati aggregati nel modello AggregatedErrorLog
+    for aggregation in error_aggregations:
+        AggregatedErrorLog.objects.using('gold').update_or_create(
+            timestamp_aggregation=now,
+            hour=aggregation['hour'],
+            day=aggregation['day'],
+            defaults={'count': aggregation['count']}
+        )

@@ -1,27 +1,29 @@
-from django_q.tasks import schedule
+from django_q.tasks import schedule, Schedule
 from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 def schedule_tasks():
-    # Schedula l'aggregazione dei log di accesso ogni giorno a mezzanotte
-    schedule(
-        'gold_bi.tasks.logging.aggregate_access_logs.aggregate_access_logs',
-        schedule_type='D',
-        repeats=-1,  # Ripeti indefinitamente
-        next_run=timezone.now() + timezone.timedelta(days=1)
-    )
+    try:
+        if not Schedule.objects.filter(func='gold_bi.tasks.logging.aggregate_access_logs.aggregate_access_logs').exists():
+            schedule(
+                'gold_bi.tasks.logging.aggregate_access_logs.aggregate_access_logs',
+                schedule_type='D',
+                repeats=-1,
+                next_run=timezone.now() + timezone.timedelta(seconds=10),
+                cluster='gold_bi'
+            )
+            logger.info("Scheduled aggregate_access_logs task")
 
-    # Schedula l'aggregazione dei log di errori ogni giorno a mezzanotte
-    schedule(
-        'gold_bi.tasks.logging.aggregate_error_logs.aggregate_error_logs',
-        schedule_type='D',
-        repeats=-1,  # Ripeti indefinitamente
-        next_run=timezone.now() + timezone.timedelta(days=1)
-    )
-
-    # Schedula l'aggregazione dei codici di risposta ogni giorno a mezzanotte
-    schedule(
-        'gold_bi.tasks.logging.aggregate_response_logs.aggregate_response_logs',
-        schedule_type='D',
-        repeats=-1,  # Ripeti indefinitamente
-        next_run=timezone.now() + timezone.timedelta(days=1)
-    )
+        if not Schedule.objects.filter(func='gold_bi.tasks.logging.aggregate_error_logs.aggregate_error_logs').exists():
+            schedule(
+                'gold_bi.tasks.logging.aggregate_error_logs.aggregate_error_logs',
+                schedule_type='D',
+                repeats=-1,
+                next_run=timezone.now() + timezone.timedelta(seconds=10),
+                cluster='gold_bi'
+            )
+            logger.info("Scheduled aggregate_error_logs task")
+    except Exception as e:
+        logger.error(f"Error scheduling tasks: {e}")
