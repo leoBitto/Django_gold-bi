@@ -9,7 +9,8 @@ def schedule_tasks():
         if not Schedule.objects.filter(func='gold_bi.tasks.logging.aggregate_access_logs.aggregate_access_logs').exists():
             schedule(
                 'gold_bi.tasks.logging.aggregate_access_logs.aggregate_access_logs',
-                schedule_type='D',
+                schedule_type=Schedule.MINUTES,
+                minutes=2,
                 repeats=-1,
                 next_run=timezone.now() + timezone.timedelta(seconds=10),
                 cluster='gold_bi'

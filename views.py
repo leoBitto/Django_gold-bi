@@ -13,11 +13,15 @@ class GraphsView(View):
 
     def get(self, request):
 
-        # Recupera i dati per errori e accessi
-        errors_by_hour = AggregatedErrorLog.objects.using('gold').values('hour').annotate(count=Count('id'))
-        errors_by_day = AggregatedErrorLog.objects.using('gold').values('day').annotate(count=Count('id'))
-        access_by_hour = AggregatedAccessLog.objects.using('gold').values('hour').annotate(count=Count('id'))
-        access_by_day = AggregatedAccessLog.objects.using('gold').values('day').annotate(count=Count('id'))
+        # Recupera tutti i dati aggregati
+        error_data = AggregatedErrorLog.objects.using('gold').values('hour', 'day').annotate(count=Count('id'))
+        access_data = AggregatedAccessLog.objects.using('gold').values('hour', 'day').annotate(count=Count('id'))
+
+        # Separare i dati per ora e giorno
+        errors_by_hour = [entry for entry in error_data if entry['hour'] is not None]
+        errors_by_day = [entry for entry in error_data if entry['day'] is not None]
+        access_by_hour = [entry for entry in access_data if entry['hour'] is not None]
+        access_by_day = [entry for entry in access_data if entry['day'] is not None]
 
         # Grafici
         error_hourly_chart = self.create_hourly_distribution_chart(errors_by_hour, 'Errors by Hour')
@@ -46,10 +50,33 @@ class GraphsView(View):
         """
         Crea un grafico a barre che mostra il conteggio degli eventi per ogni giorno della settimana.
         """
+        # Mappatura dei giorni della settimana (Domenica = 1, ..., Sabato = 7)
+        day_mapping = {
+            1: 'Sunday',
+            2: 'Monday',
+            3: 'Tuesday',
+            4: 'Wednesday',
+            5: 'Thursday',
+            6: 'Friday',
+            7: 'Saturday'
+        }
+
+        # Conversione dei numeri dei giorni in nomi dei giorni
+        day_names = [day_mapping[entry.day] for entry in data]
+
+        # Creazione del grafico a barre
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=[entry['day'] for entry in data], y=[entry['count'] for entry in data]))
-        fig.update_layout(title=title, xaxis_title='Day of Week', yaxis_title='Count')
+        fig.add_trace(go.Bar(x=day_names, y=[entry.count for entry in data]))
+
+        # Aggiornamento del layout del grafico
+        fig.update_layout(
+            title=title,
+            xaxis_title='Day of Week',
+            yaxis_title='Count'
+        )
+        # Restituzione del grafico come HTML
         return fig.to_html(full_html=False)
+
 
     def create_hourly_distribution_chart(self, data, title):
         """
