@@ -4,38 +4,52 @@ import plotly.graph_objs as go
 from django.db.models import Count
 from logging_app.models import AccessLog, ErrorLog
 from .models import AggregatedAccessLog, AggregatedErrorLog
-from django.db.models import Count
-import pandas as pd
-import numpy as np
+import logging
+
+logger = logging.getLogger('gold_bi')
 
 
 class GraphsView(View):
 
     def get(self, request):
+        try:
+            # Recupera tutti i dati aggregati
+            error_data = AggregatedErrorLog.objects.using('gold').all()
+            access_data = AggregatedAccessLog.objects.using('gold').all()
 
-        # Recupera tutti i dati aggregati
-        error_data = AggregatedErrorLog.objects.using('gold').values('hour', 'day').annotate(count=Count('id'))
-        access_data = AggregatedAccessLog.objects.using('gold').values('hour', 'day').annotate(count=Count('id'))
+            logger.info('Access data retrieved: %s', access_data)
+            logger.info('Error data retrieved: %s', error_data)
 
-        # Separare i dati per ora e giorno
-        errors_by_hour = [entry for entry in error_data if entry['hour'] is not None]
-        errors_by_day = [entry for entry in error_data if entry['day'] is not None]
-        access_by_hour = [entry for entry in access_data if entry['hour'] is not None]
-        access_by_day = [entry for entry in access_data if entry['day'] is not None]
+            # Separare i dati per ora e giorno
+            errors_by_hour = [entry for entry in error_data if entry['hour'] is not None]
+            errors_by_day = [entry for entry in error_data if entry['day'] is not None]
+            access_by_hour = [entry for entry in access_data if entry['hour'] is not None]
+            access_by_day = [entry for entry in access_data if entry['day'] is not None]
 
-        # Grafici
-        error_hourly_chart = self.create_hourly_distribution_chart(errors_by_hour, 'Errors by Hour')
-        error_daily_chart = self.create_weekly_distribution_chart(errors_by_day, 'Errors by Day of Week')
-        access_hourly_chart = self.create_hourly_distribution_chart(access_by_hour, 'Accesses by Hour')
-        access_daily_chart = self.create_weekly_distribution_chart(access_by_day, 'Accesses by Day of Week')
+            logger.info("acces data filtered hour: %s", access_by_hour)
+            logger.info("acces data filtered day: %s", access_by_day)
 
-        # Passa i dati al template della dashboard
-        return render(request, 'gold_bi/graphs.html', {
-            'error_hourly_chart': error_hourly_chart,
-            'error_daily_chart': error_daily_chart,
-            'access_hourly_chart': access_hourly_chart,
-            'access_daily_chart': access_daily_chart,
-        })
+            # Grafici
+            error_hourly_chart = self.create_hourly_distribution_chart(errors_by_hour, 'Errors by Hour')
+            error_daily_chart = self.create_weekly_distribution_chart(errors_by_day, 'Errors by Day of Week')
+            access_hourly_chart = self.create_hourly_distribution_chart(access_by_hour, 'Accesses by Hour')
+            access_daily_chart = self.create_weekly_distribution_chart(access_by_day, 'Accesses by Day of Week')
+
+            logger.info('Graphs created successfully.')
+
+            # Passa i dati al template della dashboard
+            return render(request, 'gold_bi/graphs.html', {
+                'error_hourly_chart': error_hourly_chart,
+                'error_daily_chart': error_daily_chart,
+                'access_hourly_chart': access_hourly_chart,
+                'access_daily_chart': access_daily_chart,
+            })
+        except Exception as e:
+            logger.error('Error in GraphsView: %s', e)
+            return render(request, 'gold_bi/graphs.html', {
+                'error': 'An error occurred while generating the graphs.'
+            })
+
 
 
     def create_response_code_pie_chart(self, response_codes):
@@ -86,10 +100,6 @@ class GraphsView(View):
         fig.add_trace(go.Bar(x=[entry['hour'] for entry in data], y=[entry['count'] for entry in data]))
         fig.update_layout(title=title, xaxis_title='Hour of Day', yaxis_title='Count')
         return fig.to_html(full_html=False)
-
-
-
-
 
 
 
