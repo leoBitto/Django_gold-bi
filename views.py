@@ -21,13 +21,15 @@ class GraphsView(View):
             logger.info('Error data retrieved: %s', error_data)
 
             # Separare i dati per ora e giorno
-            errors_by_hour = [entry for entry in error_data if entry['hour'] is not None]
-            errors_by_day = [entry for entry in error_data if entry['day'] is not None]
+
             access_by_hour = [entry for entry in access_data if entry['hour'] is not None]
             access_by_day = [entry for entry in access_data if entry['day'] is not None]
 
             logger.info("acces data filtered hour: %s", access_by_hour)
             logger.info("acces data filtered day: %s", access_by_day)
+
+            errors_by_hour = [entry for entry in error_data if entry is not None]
+            errors_by_day = [entry for entry in error_data if entry['day'] is not None]
 
             # Grafici
             error_hourly_chart = self.create_hourly_distribution_chart(errors_by_hour, 'Errors by Hour')
