@@ -17,19 +17,27 @@ class GraphsView(View):
             error_data = AggregatedErrorLog.objects.using('gold').all()
             access_data = AggregatedAccessLog.objects.using('gold').all()
 
-            logger.info('Access data retrieved: %s', access_data)
-            logger.info('Error data retrieved: %s', error_data)
+            #logger.info('Access data retrieved: %s', access_data)
+            #logger.info('Error data retrieved: %s', error_data)
+
 
             # Separare i dati per ora e giorno
+            try:
+                access_by_hour = [{'hour': entry.hour, 'count': entry.count} for entry in access_data]
+                errors_by_hour = [{'hour': entry.hour, 'count': entry.count} for entry in error_data]
+            except Exception as e:
+                logger.error(f"an error occured in hour: {e}")
 
-            access_by_hour = [entry for entry in access_data if entry['hour'] is not None]
-            access_by_day = [entry for entry in access_data if entry['day'] is not None]
+            try:
+                access_by_day = [{'day': entry.day, 'count': entry.count} for entry in access_data]
+                errors_by_day = [{'day': entry.day, 'count': entry.count} for entry in error_data]
+            except Exception as e:
+                logger.error(f"an error occured in day: {e}")
 
-            logger.info("acces data filtered hour: %s", access_by_hour)
-            logger.info("acces data filtered day: %s", access_by_day)
 
-            errors_by_hour = [entry for entry in error_data if entry is not None]
-            errors_by_day = [entry for entry in error_data if entry['day'] is not None]
+            #logger.info("acces data filtered hour: %s", access_by_hour)
+            #logger.info("acces data filtered day: %s", access_by_day)
+
 
             # Grafici
             error_hourly_chart = self.create_hourly_distribution_chart(errors_by_hour, 'Errors by Hour')
@@ -49,7 +57,8 @@ class GraphsView(View):
         except Exception as e:
             logger.error('Error in GraphsView: %s', e)
             return render(request, 'gold_bi/graphs.html', {
-                'error': 'An error occurred while generating the graphs.'
+                'error': 'An error occurred while generating the graphs.',
+                'error_message': str(e),
             })
 
 
@@ -61,6 +70,7 @@ class GraphsView(View):
         fig = go.Figure(data=[go.Pie(labels=[entry['response_code'] for entry in response_codes], values=[entry['count'] for entry in response_codes])])
         fig.update_layout(title='Response Code Distribution')
         return fig.to_html(full_html=False)
+    
 
     def create_weekly_distribution_chart(self, data, title):
         """
@@ -68,21 +78,32 @@ class GraphsView(View):
         """
         # Mappatura dei giorni della settimana (Domenica = 1, ..., Sabato = 7)
         day_mapping = {
-            1: 'Sunday',
-            2: 'Monday',
-            3: 'Tuesday',
-            4: 'Wednesday',
-            5: 'Thursday',
-            6: 'Friday',
-            7: 'Saturday'
+            '1': 'Sunday',
+            '2': 'Monday',
+            '3': 'Tuesday',
+            '4': 'Wednesday',
+            '5': 'Thursday',
+            '6': 'Friday',
+            '7': 'Saturday'
         }
 
-        # Conversione dei numeri dei giorni in nomi dei giorni
-        day_names = [day_mapping[entry.day] for entry in data]
+        # Verifica dei dati
+        #logger.info('Raw data: %s', data)
+    
+        try:
+            # Conversione dei numeri dei giorni in nomi dei giorni
+            day_names = [day_mapping[entry['day']] for entry in data]
+            counts = [entry['count'] for entry in data]
+        except KeyError as e:
+            logger.error('KeyError: %s', e)
+            return "<p>Error: Missing or invalid key in data.</p>"
+        except Exception as e:
+            logger.error('Exception: %s', e)
+            return "<p>Error: An error occurred while generating the chart.</p>"
 
         # Creazione del grafico a barre
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=day_names, y=[entry.count for entry in data]))
+        fig.add_trace(go.Bar(x=day_names, y=counts))
 
         # Aggiornamento del layout del grafico
         fig.update_layout(

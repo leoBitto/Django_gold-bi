@@ -6,6 +6,16 @@
 {% block dashboard_app %}
 <!-- Aggiungi il tuo codice HTML personalizzato qui -->
 <div class="container-fluid">
+
+    <!-- Mostra un messaggio di errore se c'è -->
+    {% if error %}
+    <div class="alert alert-danger">
+        <strong>Error:</strong> {{ error }}
+        <p>{{ error_message }}</p>
+    </div>
+    {% endif %}
+
+    {% if not error %}
     <div class="row">
         <!-- Grafico a Barre: Distribuzione per Ore degli Errori -->
         <div class="col-md-6">
@@ -58,9 +68,7 @@
                 </div>
             </div>
         </div>
-
-
-
     </div>
+    {% endif %}
 </div>
 {% endblock %}

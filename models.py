@@ -7,7 +7,7 @@ class AggregatedErrorLog(models.Model):
     """
     timestamp_aggregation = models.DateTimeField(default=timezone.now)  # Data e ora dell'aggregazione
     hour = models.IntegerField()  # Ora (0-23)
-    day = models.CharField(max_length=10)  # Giorno della settimana (es. "Monday")
+    day = models.CharField(max_length=10)  # Giorno della settimana è un numero memorizzato come stringa
     count = models.IntegerField()  # Conteggio degli errori
 
     class Meta:

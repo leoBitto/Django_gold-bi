@@ -1,19 +1,19 @@
 import logging
 from django.utils import timezone
-from logging_app.models import AccessLog
+from logging_app.models import ErrorLog
 from gold_bi.models import AggregatedErrorLog
 from django.db.models import Count
 from django.db.models.functions import ExtractHour, ExtractWeekDay
 
 logger = logging.getLogger('gold_bi')
 
-def aggregate_access_logs():
+def aggregate_error_logs():
     try:
         now = timezone.now()
         start_time = now - timezone.timedelta(days=1)
         end_time = start_time + timezone.timedelta(days=1)
 
-        error_aggregations = AccessLog.objects.using('default').filter(
+        error_aggregations = ErrorLog.objects.using('default').filter(
             timestamp__gte=start_time, timestamp__lt=end_time
         ).annotate(
             hour=ExtractHour('timestamp'),
@@ -30,6 +30,6 @@ def aggregate_access_logs():
                 day=aggregation['day'],
                 defaults={'count': aggregation['count']}
             )
-        logger.info('Access logs aggregated successfully.')
+        logger.info('Error logs aggregated successfully.')
     except Exception as e:
-        logger.error('Error aggregating access logs: %s', e)
+        logger.error('Error aggregating error logs: %s', e)
