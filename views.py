@@ -13,13 +13,10 @@ class GraphsView(View):
 
     def get(self, request):
         try:
-            # Recupera l'ultimo timestamp di aggregazione per gli errori e gli accessi
-            latest_error_aggregation = AggregatedErrorLog.objects.using('gold').latest('timestamp_aggregation')
-            latest_access_aggregation = AggregatedAccessLog.objects.using('gold').latest('timestamp_aggregation')
 
             # Recupera i dati associati all'ultimo timestamp di aggregazione
-            error_data = AggregatedErrorLog.objects.using('gold').filter(timestamp_aggregation=latest_error_aggregation.timestamp_aggregation)
-            access_data = AggregatedAccessLog.objects.using('gold').filter(timestamp_aggregation=latest_access_aggregation.timestamp_aggregation)
+            error_data = AggregatedErrorLog.objects.using('gold').latest('timestamp_aggregation')
+            access_data =  AggregatedAccessLog.objects.using('gold').latest('timestamp_aggregation')
 
             # Separare i dati per ora e giorno
             try:
