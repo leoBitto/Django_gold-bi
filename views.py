@@ -13,30 +13,30 @@ class GraphsView(View):
 
     def get(self, request):
         try:
-            # Recupera tutti i dati aggregati
-            error_data = AggregatedErrorLog.objects.using('gold').all()
-            access_data = AggregatedAccessLog.objects.using('gold').all()
+            # Recupera l'ultimo timestamp di aggregazione per gli errori e gli accessi
+            latest_error_aggregation = AggregatedErrorLog.objects.using('gold').latest('timestamp_aggregation')
+            latest_access_aggregation = AggregatedAccessLog.objects.using('gold').latest('timestamp_aggregation')
 
-            #logger.info('Access data retrieved: %s', access_data)
-            #logger.info('Error data retrieved: %s', error_data)
-
+            # Recupera i dati associati all'ultimo timestamp di aggregazione
+            error_data = AggregatedErrorLog.objects.using('gold').filter(timestamp_aggregation=latest_error_aggregation.timestamp_aggregation)
+            access_data = AggregatedAccessLog.objects.using('gold').filter(timestamp_aggregation=latest_access_aggregation.timestamp_aggregation)
 
             # Separare i dati per ora e giorno
             try:
                 access_by_hour = [{'hour': entry.hour, 'count': entry.count} for entry in access_data]
                 errors_by_hour = [{'hour': entry.hour, 'count': entry.count} for entry in error_data]
             except Exception as e:
-                logger.error(f"an error occured in hour: {e}")
+                logger.error(f"An error occurred while processing hourly data: {e}")
+                access_by_hour = []
+                errors_by_hour = []
 
             try:
                 access_by_day = [{'day': entry.day, 'count': entry.count} for entry in access_data]
                 errors_by_day = [{'day': entry.day, 'count': entry.count} for entry in error_data]
             except Exception as e:
-                logger.error(f"an error occured in day: {e}")
-
-
-            #logger.info("acces data filtered hour: %s", access_by_hour)
-            #logger.info("acces data filtered day: %s", access_by_day)
+                logger.error(f"An error occurred while processing daily data: {e}")
+                access_by_day = []
+                errors_by_day = []
 
 
             # Grafici
