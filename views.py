@@ -14,33 +14,22 @@ class GraphsView(View):
     def get(self, request):
         try:
 
-            # Recupera i dati associati all'ultimo timestamp di aggregazione
-            error_data = AggregatedErrorLog.objects.using('gold').latest('timestamp_aggregation')
-            access_data =  AggregatedAccessLog.objects.using('gold').latest('timestamp_aggregation')
+            error_data = AggregatedErrorLog.objects.using('gold').all()
+            access_data = AggregatedAccessLog.objects.using('gold').all()
 
-            # Separare i dati per ora e giorno
-            try:
-                access_by_hour = [{'hour': entry.hour, 'count': entry.count} for entry in access_data]
-                errors_by_hour = [{'hour': entry.hour, 'count': entry.count} for entry in error_data]
-            except Exception as e:
-                logger.error(f"An error occurred while processing hourly data: {e}")
-                access_by_hour = []
-                errors_by_hour = []
+            # Controlla se i dati sono stati trovati
+            if not error_data:
+                logger.info("No aggregated errors found.")
+            if not access_data:
+                logger.info("No aggregated access logs found.")
 
-            try:
-                access_by_day = [{'day': entry.day, 'count': entry.count} for entry in access_data]
-                errors_by_day = [{'day': entry.day, 'count': entry.count} for entry in error_data]
-            except Exception as e:
-                logger.error(f"An error occurred while processing daily data: {e}")
-                access_by_day = []
-                errors_by_day = []
 
 
             # Grafici
-            error_hourly_chart = self.create_hourly_distribution_chart(errors_by_hour, 'Errors by Hour')
-            error_daily_chart = self.create_weekly_distribution_chart(errors_by_day, 'Errors by Day of Week')
-            access_hourly_chart = self.create_hourly_distribution_chart(access_by_hour, 'Accesses by Hour')
-            access_daily_chart = self.create_weekly_distribution_chart(access_by_day, 'Accesses by Day of Week')
+            error_hourly_chart = self.create_hourly_distribution_chart(error_data, 'Errors by Hour')
+            error_daily_chart = self.create_weekly_distribution_chart(error_data, 'Errors by Day of Week')
+            access_hourly_chart = self.create_hourly_distribution_chart(access_data, 'Accesses by Hour')
+            access_daily_chart = self.create_weekly_distribution_chart(access_data, 'Accesses by Day of Week')
 
             logger.info('Graphs created successfully.')
 
@@ -84,19 +73,19 @@ class GraphsView(View):
             '7': 'Saturday'
         }
 
-        # Verifica dei dati
-        #logger.info('Raw data: %s', data)
-    
-        try:
-            # Conversione dei numeri dei giorni in nomi dei giorni
-            day_names = [day_mapping[entry['day']] for entry in data]
-            counts = [entry['count'] for entry in data]
-        except KeyError as e:
-            logger.error('KeyError: %s', e)
-            return "<p>Error: Missing or invalid key in data.</p>"
-        except Exception as e:
-            logger.error('Exception: %s', e)
-            return "<p>Error: An error occurred while generating the chart.</p>"
+        # Aggregazione dei dati per giorni
+        day_counts = {}
+        for entry in data:
+            day = entry.day
+            count = entry.count
+            if day in day_counts:
+                day_counts[day] += count
+            else:
+                day_counts[day] = count
+
+        # Conversione dei numeri dei giorni in nomi dei giorni
+        day_names = [day_mapping[day] for day in sorted(day_counts.keys())]
+        counts = [day_counts[day] for day in sorted(day_counts.keys())]
 
         # Creazione del grafico a barre
         fig = go.Figure()
@@ -108,7 +97,6 @@ class GraphsView(View):
             xaxis_title='Day of Week',
             yaxis_title='Count'
         )
-        # Restituzione del grafico come HTML
         return fig.to_html(full_html=False)
 
 
@@ -116,8 +104,20 @@ class GraphsView(View):
         """
         Crea un grafico a barre che mostra il conteggio degli eventi per ogni ora della giornata.
         """
+        # Aggregazione dei dati per ore
+        hour_counts = {}
+        for entry in data:
+            hour = entry.hour
+            count = entry.count
+            if hour in hour_counts:
+                hour_counts[hour] += count
+            else:
+                hour_counts[hour] = count
+
+
+        # Creazione del grafico a barre
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=[entry['hour'] for entry in data], y=[entry['count'] for entry in data]))
+        fig.add_trace(go.Bar(x=list(sorted(hour_counts.keys())), y=[hour_counts[hour] for hour in sorted(hour_counts.keys())]))
         fig.update_layout(title=title, xaxis_title='Hour of Day', yaxis_title='Count')
         return fig.to_html(full_html=False)
 
